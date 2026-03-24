@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CityTransit - Детальне Планування (Лаб 3)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        /* BASE STYLES */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: #05080f;
+            color: #D1D5DB;
+            font-family: 'Urbanist', sans-serif;
+            line-height: 1.6;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            width: 100%;
+            max-width: 1280px;
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+        }
+
+        /* TYPOGRAPHY */
+        h1, h2, h3, h4 { color: #F9FAFB; font-weight: 700; margin-bottom: 15px; }
+        h1 { font-size: 48px; text-align: center; color: #00E5FF; }
+        h2 { font-size: 32px; border-bottom: 2px solid rgba(0, 229, 255, 0.2); padding-bottom: 10px; color: #F9FAFB; }
+        h2 span { color: #00E5FF; }
+        h3 { font-size: 22px; color: #3B82F6; }
+        p { font-size: 16px; margin-bottom: 10px; }
+        strong { color: #F9FAFB; }
+
+        /* SECTIONS & CARDS */
+        .section-card {
+            background-color: #0B0F19;
+            border: 1px solid #1F2937;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            position: relative;
+            overflow: hidden;
+        }
+        .section-card::before {
+            background: radial-gradient(circle at top right, rgba(0, 229, 255, 0.05) 0%, transparent 50%);
+            content: ''; height: 100%; left: 0; position: absolute; top: 0; width: 100%; pointer-events: none;
+        }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+        
+        .info-box {
+            background-color: #111827;
+            border-left: 4px solid #00E5FF;
+            padding: 20px;
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 20px;
+        }
+
+        /* LISTS */
+        .bullet-list { list-style: none; padding-left: 10px; }
+        .bullet-list li { margin-bottom: 10px; position: relative; padding-left: 25px; }
+        .bullet-list li i { color: #00E5FF; position: absolute; left: 0; top: 5px; font-size: 14px; }
+        
+        .bullet-list-small { list-style: disc; padding-left: 20px; color: #9CA3AF; font-size: 15px; }
+        .bullet-list-small li { margin-bottom: 4px; }
+
+        /* INTERACTIVE ACCORDION (DETAILS/SUMMARY) */
+        details {
+            background-color: #111827;
+            border: 1px solid #1F2937;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+        summary {
+            padding: 20px;
+            font-size: 20px;
+            font-weight: 600;
+            color: #F9FAFB;
+            cursor: pointer;
+            list-style: none;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: linear-gradient(90deg, #111827, #1a2333);
+            transition: background 0.3s ease;
+        }
+        summary::-webkit-details-marker { display: none; }
+        summary:hover { background: #1F2937; }
+        summary::after {
+            content: '\f078';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            color: #00E5FF;
+            transition: transform 0.3s ease;
+        }
+        details[open] summary::after { transform: rotate(180deg); }
+        .details-content { padding: 20px; border-top: 1px solid #1F2937; }
+
+        /* TASKS UI */
+        .task-card {
+            background-color: #0B0F19;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            margin-top: 15px;
+        }
+        .task-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #1F2937;
+        }
+        .task-title { font-size: 18px; font-weight: 700; color: #F9FAFB; }
+        .badges { display: flex; gap: 10px; }
+        .badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .badge-sp { background: rgba(0, 229, 255, 0.15); color: #00E5FF; border: 1px solid #00E5FF; }
+        .badge-user { background: rgba(59, 130, 246, 0.15); color: #3B82F6; border: 1px solid #3B82F6; }
+
+        .attr-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 15px;
+            background-color: rgba(17, 24, 39, 0.5);
+            padding: 15px;
+            border-radius: 8px;
+        }
+        .attr-box h4 { font-size: 14px; color: #9CA3AF; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+
+        /* GANTT CHART */
+        .gantt-wrapper { background: #111827; border: 1px solid #1F2937; border-radius: 12px; padding: 20px; overflow-x: auto;}
+        .gantt-grid { display: grid; grid-template-columns: 300px repeat(6, 1fr); gap: 2px; align-items: center; min-width: 800px;}
+        .gantt-header { background: #1F2937; padding: 12px; font-weight: 700; color: #9CA3AF; text-align: center; font-size: 14px;}
+        .gantt-header:first-child { text-align: left; color: #F9FAFB; }
+        .gantt-row { display: contents; }
+        .gantt-cell { padding: 15px 10px; border-bottom: 1px solid #1F2937; position: relative; min-height: 50px;}
+        .gantt-task-name { font-weight: 600; color: #D1D5DB; font-size: 14px; display: flex; align-items: center;}
+        .gantt-task-name i { margin-right: 10px; color: #3B82F6;}
+        
+        .bar { position: absolute; top: 12px; bottom: 12px; border-radius: 6px; z-index: 5;}
+        .bar-blue { background: linear-gradient(90deg, #3B82F6, #2563EB); }
+        .bar-cyan { background: linear-gradient(90deg, #00E5FF, #00B8D4); }
+        .bar-purple { background: linear-gradient(90deg, #8B5CF6, #6D28D9); }
+        .span-1 { width: calc(100% - 4px); left: 2px; }
+        .span-2 { width: calc(200% - 4px); left: 2px; }
+        .span-3 { width: calc(300% - 4px); left: 2px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <!-- HEADER -->
+    <div style="text-align: center; padding: 20px 0;">
+        <h1>Проєкт CityTransit</h1>
+        <p style="font-size: 24px; color: #9CA3AF;">Проєктна документація: Вимоги, Епіки, Задачі та Діаграма Ганта</p>
+        <p>Лабораторна робота №3 | Виконав: Кара Микита (АІ-221)</p>
+    </div>
+
+    <!-- 1. REQUIREMENTS -->
+    <div class="section-card">
+        <h2>1. Вимоги до <span>Програмного Продукту</span></h2>
+        <div class="grid-2">
+            <div>
+                <h3>Функціональні вимоги</h3>
+                <ul class="bullet-list">
+                    <li><i class="fa-solid fa-check"></i> <strong>FR1:</strong> Система повинна відображати переміщення транспорту на карті в реальному часі.</li>
+                    <li><i class="fa-solid fa-check"></i> <strong>FR2:</strong> Система повинна розраховувати прогнозований час прибуття (ETA) на зупинку.</li>
+                    <li><i class="fa-solid fa-check"></i> <strong>FR3:</strong> Додаток має будувати оптимальні маршрути з урахуванням пересадок.</li>
+                    <li><i class="fa-solid fa-check"></i> <strong>FR4:</strong> Можливість безготівкової оплати проїзду (Apple Pay / Google Pay / NFC).</li>
+                    <li><i class="fa-solid fa-check"></i> <strong>FR5:</strong> Генерація та відображення динамічного QR-квитка після оплати.</li>
+                    <li><i class="fa-solid fa-check"></i> <strong>FR6:</strong> Система має надсилати push-сповіщення про затори та зміни маршрутів.</li>
+                    <li><i class="fa-solid fa-check"></i> <strong>FR7:</strong> Користувачі можуть залишати оцінки водіям та стану автобусів.</li>
+                    <li><i class="fa-solid fa-check"></i> <strong>FR8:</strong> Адмін-панель для управління розкладом та перегляду статистики.</li>
+                </ul>
+            </div>
+            <div>
+                <h3>Нефункціональні вимоги</h3>
+                <ul class="bullet-list">
+                    <li><i class="fa-solid fa-bolt"></i> <strong>NFR1 (Продуктивність):</strong> Затримка оновлення GPS-координат на клієнті не більше 3 секунд.</li>
+                    <li><i class="fa-solid fa-server"></i> <strong>NFR2 (Масштабованість):</strong> Серверна частина повинна витримувати до 50 000 одночасних підключень.</li>
+                    <li><i class="fa-solid fa-shield-halved"></i> <strong>NFR3 (Надійність):</strong> Доступність сервісу (SLA Uptime) має бути не нижче 99.9%.</li>
+                    <li><i class="fa-solid fa-mobile"></i> <strong>NFR4 (Сумісність):</strong> Мобільний додаток підтримує iOS 14+ та Android 10+.</li>
+                    <li><i class="fa-solid fa-lock"></i> <strong>NFR5 (Безпека):</strong> Усі транзакції відповідають стандарту PCI DSS.</li>
+                    <li><i class="fa-solid fa-language"></i> <strong>NFR6 (Локалізація):</strong> Інтерфейс підтримує українську та англійську мови.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. ESTIMATION METHOD -->
+    <div class="section-card">
+        <h2>2. Метод оцінювання: <span>Planning Poker (Story Points)</span></h2>
+        <div class="info-box">
+            <p><strong>Чому обрано цей метод?</strong> Planning Poker з використанням Story Points (за числами Фібоначчі: 1, 2, 3, 5, 8, 13) дозволяє врахувати не лише час, але й <em>складність, обсяг роботи та ризики/невизначеність</em> кожної задачі. </p>
+            <p><strong>Переваги:</strong> Оцінювання відбувається всією командою (усуває сліпі зони), процес іде швидше за точні погодинні оцінки, а також нівелюється різниця у швидкості роботи Senior та Junior розробників.</p>
+        </div>
+    </div>
+
+    <!-- 3. INITIATIVE -->
+    <div class="section-card">
+        <h2>3. Головна Ініціатива <span>(Initiative)</span></h2>
+        <div class="info-box" style="border-color: #8B5CF6; background-color: rgba(139, 92, 246, 0.1);">
+            <h3>Резюме: Запуск MVP платформи CityTransit (Мобільний додаток + Бекенд)</h3>
+            <p><strong>Опис:</strong> Створення, тестування та розгортання базової версії системи CityTransit в одному пілотному місті. Ініціатива об'єднує епіки для досягнення головної мети - запуску єдиної платформи для відстеження громадського транспорту, безготівкової оплати та маршрутизації.</p>
+            
+            <div class="grid-2" style="margin-top: 20px;">
+                <div>
+                    <h4>Критерії готовності до роботи (Definition of Ready)</h4>
+                    <ul class="bullet-list-small">
+                        <li>Ідея чітко сформульована (ідея та обсяг робіт зрозумілі власнику ініціативи).</li>
+                        <li>Пріоритет визначено, а бюджет (2 млн грн) затверджено.</li>
+                        <li>Ініціатива узгоджена із суміжними (підписані угоди з міською владою).</li>
+                        <li>Ключова команда з 11 фахівців (FTE) сформована та готова до роботи.</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>Критерії готовності (Definition of Done)</h4>
+                    <ul class="bullet-list-small">
+                        <li>Продукт повністю реалізовано.</li>
+                        <li>Опубліковано в App Store та Google Play.</li>
+                        <li>Доставлено до цільового середовища (production-сервери обробляють реальні GPS-дані).</li>
+                        <li>Маркетингова кампанія успішно запущена.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4 & 5. EPICS AND TASKS (RENDERED VIA JS) -->
+    <div class="section-card">
+        <h2>4-6. Епіки та Задачі <span>(Product Backlog)</span></h2>
+        
+        
+        <div id="epics-container">
+            <!-- JS will inject accordion items here -->
+        </div>
+        
+        <div style="margin-top: 30px; text-align: right; padding: 20px; background: #111827; border-radius: 8px; border: 1px solid #00E5FF;">
+            <h3 style="margin: 0; color: #00E5FF;">Загальна оцінка всіх робіт: <span id="total-sp">0</span> Story Points</h3>
+        </div>
+    </div>
+
+    <!-- 7. GANTT CHART -->
+    <div class="section-card">
+        <h2>7. Діаграма Ганта <span>(План виконання)</span></h2>
+        <p>План проєкту розрахований на 6 місяців, враховуючи залежності між Епіками.</p>
+        <div class="gantt-wrapper">
+            <div class="gantt-grid">
+                <!-- Headers -->
+                <div class="gantt-header">Епіки (Epics)</div>
+                <div class="gantt-header">Місяць 1</div>
+                <div class="gantt-header">Місяць 2</div>
+                <div class="gantt-header">Місяць 3</div>
+                <div class="gantt-header">Місяць 4</div>
+                <div class="gantt-header">Місяць 5</div>
+                <div class="gantt-header">Місяць 6</div>
+                
+                <!-- Row 1 -->
+                <div class="gantt-row">
+                    <div class="gantt-cell gantt-task-name"><i class="fa-solid fa-server"></i> Епік 1: Ядро Бекенду та GPS</div>
+                    <div class="gantt-cell"><div class="bar bar-cyan span-2"></div></div>
+                    <div class="gantt-cell"></div><div class="gantt-cell"></div><div class="gantt-cell"></div><div class="gantt-cell"></div><div class="gantt-cell"></div>
+                </div>
+                
+                <!-- Row 2 -->
+                <div class="gantt-row">
+                    <div class="gantt-cell gantt-task-name"><i class="fa-solid fa-mobile"></i> Епік 3: Мобільний додаток UI/UX</div>
+                    <div class="gantt-cell"><div class="bar bar-blue span-3"></div></div>
+                    <div class="gantt-cell"></div><div class="gantt-cell"></div><div class="gantt-cell"></div><div class="gantt-cell"></div><div class="gantt-cell"></div>
+                </div>
+
+                <!-- Row 3 -->
+                <div class="gantt-row">
+                    <div class="gantt-cell gantt-task-name"><i class="fa-solid fa-brain"></i> Епік 2: Смарт-алгоритм (ETA)</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell"><div class="bar bar-purple span-2"></div></div>
+                    <div class="gantt-cell"></div><div class="gantt-cell"></div><div class="gantt-cell"></div><div class="gantt-cell"></div>
+                </div>
+
+                <!-- Row 4 -->
+                <div class="gantt-row">
+                    <div class="gantt-cell gantt-task-name"><i class="fa-solid fa-credit-card"></i> Епік 4: Безготівкова оплата</div>
+                    <div class="gantt-cell"></div><div class="gantt-cell"></div>
+                    <div class="gantt-cell"><div class="bar bar-cyan span-2"></div></div>
+                    <div class="gantt-cell"></div><div class="gantt-cell"></div><div class="gantt-cell"></div>
+                </div>
+                
+                <!-- Row 5 -->
+                <div class="gantt-row">
+                    <div class="gantt-cell gantt-task-name"><i class="fa-solid fa-route"></i> Епік 5: Маршрутизатор</div>
+                    <div class="gantt-cell"></div><div class="gantt-cell"></div>
+                    <div class="gantt-cell"><div class="bar bar-blue span-2"></div></div>
+                    <div class="gantt-cell"></div><div class="gantt-cell"></div><div class="gantt-cell"></div>
+                </div>
+
+                <!-- Row 6 -->
+                <div class="gantt-row">
+                    <div class="gantt-cell gantt-task-name"><i class="fa-solid fa-desktop"></i> Епік 6 та 7: Адмінка + Сповіщення</div>
+                    <div class="gantt-cell"></div><div class="gantt-cell"></div><div class="gantt-cell"></div>
+                    <div class="gantt-cell"><div class="bar bar-purple span-1"></div></div>
+                    <div class="gantt-cell"></div><div class="gantt-cell"></div>
+                </div>
+
+                <!-- Row 7 -->
+                <div class="gantt-row">
+                    <div class="gantt-cell gantt-task-name"><i class="fa-solid fa-vial-circle-check"></i> QA, Бета-тестування та Реліз</div>
+                    <div class="gantt-cell"></div><div class="gantt-cell"></div><div class="gantt-cell"></div><div class="gantt-cell"></div>
+                    <div class="gantt-cell"><div class="bar span-2" style="background: linear-gradient(90deg, #F59E0B, #10B981);"></div></div>
+                    <div class="gantt-cell"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- DATA SCRIPT FOR EPICS & TASKS -->
+<script>
+    const epicDoR = `
+        <ul class="bullet-list-small">
+            <li>Визначено бізнес-цінність (користь).</li>
+            <li>Зміст епіку зрозумілий PO та PM.</li>
+            <li>Епік призначено одній або кільком командам.</li>
+            <li>Критерії прийняття наявні та чітко сформульовані.</li>
+            <li>Відомі залежності та ризики прив'язані в Jira.</li>
+        </ul>`;
+
+    const epicDoD = `
+        <ul class="bullet-list-small">
+            <li>Реалізовано та прийнято Product Owner-ом.</li>
+            <li>Усі дочірні задачі (User Stories) завершені.</li>
+            <li>Критерії прийняття перевірені та підтверджені PO.</li>
+        </ul>`;
+
+    // Data Structure with CUSTOM TASK-SPECIFIC DoR and DoD
+    const projectData = [
+        {
+            name: "Епік 1: GPS трекінг та Ядро Бекенду",
+            desc: "Розробка серверного ядра для прийому, обробки та трансляції координат рухомого складу в реальному часі.",
+            ac: "Сервер стабільно отримує дані з GPS-трекерів кожні 3 секунди. Розроблено REST/WebSocket API для мобільних клієнтів. Створено базу даних для зберігання маршрутів.",
+            dor: epicDoR, dod: epicDoD,
+            tasks: [
+                { 
+                    name: "Задача 1.1: Архітектура схеми БД", desc: "Спроектувати таблиці routes, stops, vehicles, schedules у PostgreSQL.", ac: "Схема нормалізована, міграції проходять успішно, індекси створені для швидкого пошуку.", est: 5, assignee: "Backend Dev",
+                    dor: ["Сформовані вимоги до сутностей та їх зв'язків.", "Обрано СУБД (PostgreSQL)."],
+                    dod: ["Схема БД розгорнута на тестовому сервері.", "Скрипти міграцій відпрацьовують успішно.", "Оновлено ER-діаграму проекту."]
+                },
+                { 
+                    name: "Задача 1.2: REST API прийому GPS", desc: "Створити захищений endpoint для отримання координат від трекерів.", ac: "API приймає POST запити, валідує координати та зберігає в БД з затримкою < 100ms.", est: 5, assignee: "Backend Dev",
+                    dor: ["Доступна специфікація вхідних даних від GPS-трекерів.", "Налаштовано тестове середовище Postman."],
+                    dod: ["Endpoint /api/gps створено.", "Реалізовано базову валідацію (координати не порожні).", "Помилки запису логуються."]
+                },
+                { 
+                    name: "Задача 1.3: WebSocket транслятор", desc: "Налаштувати WebSocket сервер для трансляції координат клієнтам.", ac: "Клієнти підключаються та отримують оновлення локацій транспорту в реальному часі без перезавантаження.", est: 8, assignee: "Backend Dev",
+                    dor: ["Визначено протокол обміну даними з фронтендом.", "Обрано бібліотеку (Socket.io)."],
+                    dod: ["WebSocket сервер працює на порту 8080.", "Дані розсилаються лише підписаним клієнтам.", "Затримка передачі < 100мс."]
+                },
+                { 
+                    name: "Задача 1.4: Адаптери даних перевізників", desc: "Написати адаптери для перетворення сирих даних різних перевізників у єдиний формат.", ac: "Підтримуються мінімум 2 протоколи перевізників (напр. Wialon, Teltonika).", est: 8, assignee: "Backend Dev",
+                    dor: ["Наявна документація API 2+ перевізників.", "Отримані тестові дані або дампи від партнерів."],
+                    dod: ["Адаптери успішно парсять сторонні формати.", "Тести перевіряють обробку невалідних значень від перевізників."]
+                },
+                { 
+                    name: "Задача 1.5: Налаштування CI/CD пайплайну", desc: "Налаштувати автоматичну збірку та деплой на AWS/DigitalOcean.", ac: "Кожен коміт в main-гілку автоматично розгортається на staging-сервері.", est: 5, assignee: "DevOps Eng.",
+                    dor: ["Надано доступи до хостингу та GitHub Actions.", "Docker-compose файли готові."],
+                    dod: ["Пайплайн успішно збирає образ і пушить в Registry.", "Автоматичний деплой працює без даунтайму (Zero-downtime)."]
+                }
+            ]
+        },
+        {
+            name: "Епік 2: Модуль смарт-прогнозування (ETA)",
+            desc: "Створення смарт-модуля розрахунку прогнозованого часу прибуття транспорту з урахуванням заторів.",
+            ac: "Алгоритм розраховує час (ETA) для наступних 5 зупинок. Похибка прогнозу не перевищує 2 хвилин.",
+            dor: epicDoR, dod: epicDoD,
+            tasks: [
+                { 
+                    name: "Задача 2.1: Модель історичної швидкості", desc: "Створити модель, яка розраховує середню швидкість між зупинками на основі історії.", ac: "Модель агрегує історичні дані та вираховує базову швидкість для кожного сегменту дороги.", est: 8, assignee: "Data Eng.",
+                    dor: ["Зібрано історичні дані переміщень мінімум за 1 місяць.", "Дані очищені від аномалій."],
+                    dod: ["Модель натренована і може видавати базову швидкість.", "Написано скрипт для регулярного донавчання моделі."]
+                },
+                { 
+                    name: "Задача 2.2: Інтеграція API заторів", desc: "Підключити Google Maps API або TomTom для отримання поточних заторів.", ac: "Система кожні 5 хвилин оновлює коефіцієнт заторів для маршрутів.", est: 5, assignee: "Data Eng.",
+                    dor: ["Отримано та налаштовано API ключі Google Maps.", "Затверджено ліміти запитів для економії бюджету."],
+                    dod: ["Скрипт успішно підтягує затори.", "Множники швидкості коректно зберігаються в кеш."]
+                },
+                { 
+                    name: "Задача 2.3: Мікросервіс розрахунку ETA", desc: "Написати мікросервіс, який поєднує координати, базову швидкість та затори для видачі ETA.", ac: "Сервіс повертає масив часу прибуття (в секундах) через REST/gRPC.", est: 13, assignee: "Data Eng.",
+                    dor: ["Модель швидкості та дані заторів інтегровані в єдине середовище.", "Визначено архітектуру мікросервісу."],
+                    dod: ["REST endpoint /eta працює і повертає масив часу.", "Розрахунки враховують зупинки на світлофорах (на основі історії)."]
+                },
+                { 
+                    name: "Задача 2.4: Юніт та навантажувальне тестування ETA", desc: "Покрити алгоритм тестами та перевірити під навантаженням.", ac: "Покриття коду > 85%. Сервіс витримує 5000 запитів/сек.", est: 5, assignee: "QA Engineer",
+                    dor: ["Сервіс розрахунку ETA розгорнуто на Staging.", "Налаштовано інструмент JMeter/K6."],
+                    dod: ["Покриття юніт-тестами досягло 85%.", "Сервіс витримує 5000 req/s.", "Звіт про навантаження затверджено."]
+                },
+                { 
+                    name: "Задача 2.5: Оптимізація рівня кешування", desc: "Додати Redis кешування для зменшення навантаження на БД при розрахунку.", ac: "Розраховані ETA кешуються на 10 секунд для однакових запитів.", est: 3, assignee: "Backend Dev",
+                    dor: ["Встановлено та налаштовано Redis сервер.", "Виявлено вузькі місця в запитах до БД."],
+                    dod: ["Кеш працює.", "Кількість запитів до основної БД впала щонайменше на 50%.", "TTL для ключів налаштовано."]
+                }
+            ]
+        },
+        {
+            name: "Епік 3: Мобільний додаток пасажира (iOS/Android)",
+            desc: "Розробка клієнтської частини додатку для користувачів із картою та інтерфейсом (React Native / Flutter).",
+            ac: "Додаток встановлюється на iOS та Android. Карта завантажується, маркери транспорту рухаються. Інтерфейс відповідає затвердженому макету.",
+            dor: epicDoR, dod: epicDoD,
+            tasks: [
+                { 
+                    name: "Задача 3.1: Каркас додатку та Навігація", desc: "Налаштувати проект, роутинг (Bottom Tabs) та базову архітектуру Redux/Context.", ac: "Додаток компілюється. Переходи між екранами Карта, Маршрути, Профіль працюють.", est: 5, assignee: "Mobile Dev",
+                    dor: ["Обрано фреймворк (React Native).", "Створені базові макети переходів (Wireframes)."],
+                    dod: ["Додаток збирається під iOS та Android.", "Вкладки (Tabs) перемикаються без помилок.", "Налаштовано state management (Redux)."]
+                },
+                { 
+                    name: "Задача 3.2: Інтеграція компонента Карти", desc: "Інтегрувати Mapbox або Google Maps SDK.", ac: "Карта міста відображається коректно, підтримується зум та панорамування.", est: 5, assignee: "Mobile Dev",
+                    dor: ["Отримані ключі розробника для Mapbox/Google.", "Затверджено базовий стиль карти."],
+                    dod: ["Карта рендериться на головному екрані без фризів.", "Геолокація користувача визначається і центрується."]
+                },
+                { 
+                    name: "Задача 3.3: Живі маркери транспорту", desc: "Підключити WebSocket клієнт до карти для анімації маркерів.", ac: "Іконки автобусів плавно переміщуються по карті при отриманні нових координат.", est: 8, assignee: "Mobile Dev",
+                    dor: ["WebSocket API на бекенді (Задача 1.3) повністю готове.", "Іконки транспорту експортовані у SVG."],
+                    dod: ["Маркери оновлюються в реальному часі.", "Автобуси рухаються плавно (через анімацію переходу), без стрибків."]
+                },
+                { 
+                    name: "Задача 3.4: Виїзне меню 'Деталі зупинки'", desc: "Створити виїзне меню знизу при кліку на зупинку.", ac: "Меню показує список номерів маршрутів та їх ETA (через 2 хв, через 15 хв).", est: 5, assignee: "Mobile Dev",
+                    dor: ["Дизайн Bottom Sheet узгоджено.", "Доступний REST endpoint для розкладу зупинки."],
+                    dod: ["При тапі на зупинку меню плавно виїжджає знизу.", "Список маршрутів завантажується і відображається коректно.", "Скрол не глючить."]
+                },
+                { 
+                    name: "Задача 3.5: Стилізація UI/UX", desc: "Застосувати кольорову палітру, шрифти та анімації згідно Figma.", ac: "Pixel-perfect відповідність дизайну, підтримка темної/світлої теми.", est: 5, assignee: "UX / Mobile",
+                    dor: ["Надано фінальне посилання на Figma.", "Всі UI-ассети та іконки готові до експорту."],
+                    dod: ["Усі відступи, шрифти та кольори відповідають макетам.", "Додаток підтримує автоматичне перемикання між темною та світлою темами ОС."]
+                }
+            ]
+        },
+        {
+            name: "Епік 4: Система безготівкової оплати",
+            desc: "Інтеграція платіжних шлюзів для оплати проїзду смартфоном та генерації електронних квитків.",
+            ac: "Користувач може оплатити проїзд в один клік. Генерується валідний QR-код для контролера.",
+            dor: epicDoR, dod: epicDoD,
+            tasks: [
+                { 
+                    name: "Задача 4.1: Налаштування платіжного шлюзу", desc: "Інтегрувати API платіжного провайдера (напр. Stripe / Fondy) на бекенді.", ac: "Бекенд може ініціювати транзакцію та обробляти вебхуки статусу оплати.", est: 8, assignee: "Backend Dev",
+                    dor: ["Створено мерчант-акаунт у провайдера.", "Отримані тестові API ключі.", "Документація провайдера вивчена."],
+                    dod: ["Транзакції ініціюються на сервері.", "Вебхуки обробляються успішно (статуси Success/Declined)."]
+                },
+                { 
+                    name: "Задача 4.2: SDK для Apple Pay / Google Pay", desc: "Додати нативні кнопки оплати в мобільний додаток.", ac: "Викликається системний інтерфейс оплати (біометрія), токен передається на сервер.", est: 8, assignee: "Mobile Dev",
+                    dor: ["Сертифікати розробника для Apple Pay (Merchant ID) налаштовані.", "Тестовий бекенд платіжки доступний."],
+                    dod: ["Вікно оплати ОС викликається при натисканні.", "Оплата підтверджується через FaceID / TouchID.", "Токен коректно відправляється на сервер."]
+                },
+                { 
+                    name: "Задача 4.3: Динамічна генерація QR-квитка", desc: "Алгоритм генерації зашифрованого QR-коду після успішної оплати.", ac: "QR код містить цифровий підпис, ID транзакції та таймер життя (напр. 1 година).", est: 5, assignee: "Backend Dev",
+                    dor: ["Узгоджено формат шифрування даних квитка (наприклад, JWT з кастомним секретом)."],
+                    dod: ["Генерується рядок даних, який складно підробити.", "Створено метод для валідації цього підпису додатком контролера."]
+                },
+                { 
+                    name: "Задача 4.4: Екран UI відображення квитка", desc: "Екран відображення купленого квитка в додатку.", ac: "Екран містить великий QR, таймер зворотнього відліку та анімацію захисту від скріншотів.", est: 5, assignee: "Mobile Dev",
+                    dor: ["Макет квитка узгоджено з контролерами.", "Бекенд повертає строку QR-коду."],
+                    dod: ["QR-код чітко сканується з екрану.", "Таймер йде синхронно.", "Впроваджено захист: екран не можна зняти на скріншот (Secure FLAG)."]
+                },
+                { 
+                    name: "Задача 4.5: Аудит безпеки платежів", desc: "Перевірка безпеки транзакцій та запобігання дублюванню оплат.", ac: "Звіт про проходження перевірки на вразливості, відсутність можливості 'подвійної витрати'.", est: 5, assignee: "QA Engineer",
+                    dor: ["Готовий тестовий контур з повним флоу оплат.", "Надані тестові банківські картки."],
+                    dod: ["Тестування на Race Conditions пройдено.", "Сформовано звіт Security-тестувальника (без критичних вразливостей).", "Неможливо зробити 'подвійну витрату' (Double Spend)."]
+                }
+            ]
+        },
+        {
+            name: "Епік 5: Движок планування маршрутів",
+            desc: "Розробка навігаційного графа та інтерфейсу для побудови оптимальних маршрутів з пересадками.",
+            ac: "Система будує маршрут між точкою А та Б з пропозиціями громадського транспорту та пішохідних відрізків.",
+            dor: epicDoR, dod: epicDoD,
+            tasks: [
+                { 
+                    name: "Задача 5.1: Структура даних Графа", desc: "Перетворити зупинки та маршрути в формат зваженого графа.", ac: "Дані збережені в пам'яті (або GraphDB) для швидкого обходу.", est: 8, assignee: "Data Eng.",
+                    dor: ["Усі зупинки і маршрути занесені в БД.", "Визначено правила оцінки ваг (час в дорозі + час очікування)."],
+                    dod: ["Скріпт парсингу БД у граф написаний.", "Граф зберігається в оперативній пам'яті для швидких запитів."]
+                },
+                { 
+                    name: "Задача 5.2: Реалізація алгоритму маршрутизації", desc: "Написати алгоритм пошуку шляху (Dijkstra або A*) з урахуванням пересадок.", ac: "Алгоритм знаходить найшвидший шлях з максимум 2 пересадками менш ніж за 500мс.", est: 13, assignee: "Backend Dev",
+                    dor: ["Граф (Задача 5.1) повністю готовий.", "Тех.лід затвердив використання алгоритму A*."],
+                    dod: ["Пошук працює і знаходить до 3 альтернативних маршрутів.", "Штрафується (в алгоритмі) занадто велика кількість пересадок.", "Час відповіді < 500мс."]
+                },
+                { 
+                    name: "Задача 5.3: UI автозаповнення адрес", desc: "Екран пошуку 'Звідки - Куди' з автозаповненням адрес.", ac: "Поля вводу підказують вулиці та зупинки міста при введенні від 3 символів.", est: 5, assignee: "Mobile Dev",
+                    dor: ["Підключено Google Places API (або аналог).", "Дизайн екрану пошуку затверджено."],
+                    dod: ["Підказки (Suggests) з'являються після 3 літер.", "Впроваджено Debounce (затримка запитів на 300мс) для економії API."]
+                },
+                { 
+                    name: "Задача 5.4: Відображення варіантів маршруту", desc: "Відображення результатів пошуку маршруту.", ac: "Список карток з варіантами: загальний час, вартість, номери автобусів.", est: 5, assignee: "Mobile Dev",
+                    dor: ["Бекенд (Задача 5.2) повертає JSON з маршрутами.", "Макети результатів готові."],
+                    dod: ["Картки маршрутів відображають іконки транспорту, час в дорозі та ціну.", "Доступне сортування (Найшвидший / Найдешевший)."]
+                },
+                { 
+                    name: "Задача 5.5: Покрокова навігація", desc: "Екран детального маршруту.", ac: "Візуалізація кроків: 'Пройти 200м', 'Сісти на Автобус 10', 'Вийти на зупинці X'.", est: 5, assignee: "Mobile Dev",
+                    dor: ["Логіка розбиття маршруту на інструкції (Segments) працює на бекенді."],
+                    dod: ["Екран відображає лінію маршруту поверх карти.", "Текстові кроки чітко розписані і зрозумілі пасажиру."]
+                }
+            ]
+        },
+        {
+            name: "Епік 6: Аналітика та Панель Адміністратора",
+            desc: "Створення веб-порталу (React/Vue) для адміністраторів міста та перевізників.",
+            ac: "Портал має авторизацію. Адміни можуть додавати маршрути. Доступні графіки пасажиропотоку.",
+            dor: epicDoR, dod: epicDoD,
+            tasks: [
+                { 
+                    name: "Задача 6.1: Налаштування Веб-додатку та Авторизації", desc: "Створити веб-додаток та систему логіну з ролями (SuperAdmin, Carrier).", ac: "Вхід захищено JWT токенами, роутинг перевіряє права доступу.", est: 5, assignee: "Backend Dev",
+                    dor: ["Обрано стек для фронтенду адмінки (Vue/React).", "Вимоги до ролей затверджені."],
+                    dod: ["Форма входу працює.", "Токен зберігається у безпечному HttpOnly Cookie.", "Без токена користувача перекидає на сторінку логіну."]
+                },
+                { 
+                    name: "Задача 6.2: Управління маршрутами (CRUD)", desc: "Інтерфейс для створення, редагування та видалення зупинок/маршрутів.", ac: "Форми з валідацією; зміни миттєво відображаються в базі.", est: 8, assignee: "Backend Dev",
+                    dor: ["Формат даних зупинок відомий.", "Створені REST endpoints для CRUD операцій."],
+                    dod: ["Адмін може створити, змінити і видалити сутності через інтерфейс.", "Впроваджено захист від випадкового видалення (Confirm Modal)."]
+                },
+                { 
+                    name: "Задача 6.3: Живий дашборд автопарку", desc: "Віджет карти в адмінці, що показує весь транспорт на лінії.", ac: "Адмін бачить маркери з номерами авто та їх відхилення від графіка.", est: 8, assignee: "UX / Mobile",
+                    dor: ["WebSocket API трансляції (Задача 1.3) готовий.", "Карта (напр. Leaflet) підключена до веб-додатку."],
+                    dod: ["На карті відображаються всі автопарки вибраного перевізника.", "Клік по авто відкриває поп-ап з інфою про водія та відхиленням графіка."]
+                },
+                { 
+                    name: "Задача 6.4: Транзакційні звіти", desc: "Модуль експорту фінансових даних.", ac: "Можливість завантажити CSV/Excel звіт про оплати за вказаний період.", est: 5, assignee: "Backend Dev",
+                    dor: ["Шаблон звіту погоджено з фінансовим відділом / міськрадою.", "Бібліотека генерації файлів (напр. ExcelJS) обрана."],
+                    dod: ["Фільтрація по датах працює.", "Звіт генерується та завантажується коректно.", "Кирилиця в CSV не б'ється (UTF-8 with BOM)."]
+                },
+                { 
+                    name: "Задача 6.5: Аналітичні графіки", desc: "Інтеграція Chart.js/Recharts для графіків завантаженості.", ac: "Відображення гістограм годин-пік та прибутковості маршрутів.", est: 5, assignee: "Data Eng.",
+                    dor: ["Є достатньо агрегованих тестових даних в БД.", "Затверджені метрики (напр., Дохід за день, Пікові години)."],
+                    dod: ["Графіки завантаженості (по годинах) та доходу рендеряться.", "Дані відповідають реальним показникам БД.", "Графіки адаптивні під різні розміри екрану."]
+                }
+            ]
+        },
+        {
+            name: "Епік 7: Рейтинги та Push-сповіщення",
+            desc: "Впровадження системи зворотного зв'язку та інфраструктури для оперативних сповіщень.",
+            ac: "Користувачі отримують пуші. У додатку можна оцінити поїздку від 1 до 5 зірок.",
+            dor: epicDoR, dod: epicDoD,
+            tasks: [
+                { 
+                    name: "Задача 7.1: Інтеграція Firebase Cloud Messaging", desc: "Підключити FCM до мобільного додатку та бекенду.", ac: "Додаток успішно отримує токен і може приймати фонові повідомлення.", est: 8, assignee: "Mobile Dev",
+                    dor: ["Створено проект у Firebase console.", "Ключі конфігурації (GoogleService-Info) додані в проект."],
+                    dod: ["Додаток успішно отримує FCM токен при старті.", "Тестовий пуш доставляється на iOS та Android.", "Повідомлення відображаються навіть коли додаток закритий (фоновий режим)."]
+                },
+                { 
+                    name: "Задача 7.2: Відправник алертів в адмінці", desc: "Форма в адмін-панелі для ручної розсилки повідомлень про аварії.", ac: "Повідомлення доставляється всім користувачам або підписникам конкретного маршруту.", est: 5, assignee: "Backend Dev",
+                    dor: ["API відправки пушів (через Firebase SDK) налаштовано на сервері.", "Готовий UI-макет форми відправки."],
+                    dod: ["Адміністратор може ввести текст і вибрати маршрут для розсилки.", "Повідомлення успішно відправляється в чергу (Queue) та доставляється цільовим юзерам."]
+                },
+                { 
+                    name: "Задача 7.3: Модальне вікно оцінки поїздки", desc: "Спливаюче вікно в додатку після використання квитка.", ac: "Інтерфейс з 5 зірками та необов'язковим текстовим полем коментаря.", est: 3, assignee: "Mobile Dev",
+                    dor: ["Затверджено логіку тригера (показувати через 10 хвилин після оплати).", "Ендпоінт збереження відгуку готовий."],
+                    dod: ["Модалка плавно з'являється у додатку.", "Можна обрати від 1 до 5 зірок.", "Дані успішно відправляються на сервер.", "Модалка не показується повторно для однієї і тієї ж поїздки."]
+                },
+                { 
+                    name: "Задача 7.4: Логіка агрегації рейтингів", desc: "Бекенд скрипт для перерахунку середнього рейтингу водіїв/автобусів.", ac: "Рейтинг оновлюється та зберігається в профілі перевізника.", est: 5, assignee: "Backend Dev",
+                    dor: ["Формула підрахунку рейтингу узгоджена (напр. середнє значення за останні 30 днів).", "Є таблиця бази даних для зберігання відгуків."],
+                    dod: ["Налаштовано Cron-задачу для щодобового перерахунку.", "Рейтинг водія та транспорту коректно оновлюється.", "Ігноруються підозрілі відгуки (захист від накруток)."]
+                },
+                { 
+                    name: "Задача 7.5: Екран підтримки / зворотного зв'язку", desc: "Розділ 'Підтримка' для відправки скарг з фото.", ac: "Користувач може прикріпити фото, дані відправляються на email підтримки або в Jira.", est: 5, assignee: "Mobile Dev",
+                    dor: ["Визначено канал отримання скарг (email підтримки або API хелпдеску/Jira).", "Виділено S3-бакет для зберігання фото."],
+                    dod: ["Користувач може написати текст і прикріпити до 2-х фото з галереї.", "Фото стискаються перед відправкою (мінімізація трафіку).", "Дані успішно інтегруються в систему підтримки."]
+                }
+            ]
+        }
+    ];
+
+    // Render Logic
+    const container = document.getElementById('epics-container');
+    let totalSP = 0;
+
+    projectData.forEach((epic, epicIndex) => {
+        const detailsObj = document.createElement('details');
+        
+        // Count Epic SP
+        let epicSP = 0;
+        epic.tasks.forEach(t => epicSP += t.est);
+        totalSP += epicSP;
+
+        detailsObj.innerHTML = `
+            <summary>
+                <div><i class="fa-solid fa-layer-group" style="margin-right:10px; color:#3B82F6;"></i> ${epic.name}</div>
+                <div style="font-size: 14px; font-weight: normal; color: #9CA3AF;">Задачі: ${epic.tasks.length} | SP: ${epicSP}</div>
+            </summary>
+            <div class="details-content">
+                <p><strong>Опис:</strong> ${epic.desc}</p>
+                <div class="attr-grid">
+                    <div class="attr-box">
+                        <h4>Критерії прийняття (Acceptance Criteria)</h4>
+                        <p style="font-size: 14px;">${epic.ac}</p>
+                    </div>
+                    <div class="attr-box">
+                        <h4>Критерії готовності (Definition of Done)</h4>
+                        ${epic.dod}
+                    </div>
+                </div>
+                <h3 style="margin-top: 25px; font-size: 18px; border-bottom: 1px solid #1F2937; padding-bottom: 5px;">Користувацькі історії / Задачі (User Stories / Tasks)</h3>
+                
+                ${epic.tasks.map(task => `
+                    <div class="task-card">
+                        <div class="task-header">
+                            <div class="task-title"><i class="fa-solid fa-ticket" style="color: #8B5CF6; margin-right: 8px;"></i> ${task.name}</div>
+                            <div class="badges">
+                                <span class="badge badge-user"><i class="fa-solid fa-user"></i> ${task.assignee}</span>
+                                <span class="badge badge-sp">${task.est} SP</span>
+                            </div>
+                        </div>
+                        <p style="font-size: 14px; margin-bottom: 10px;"><strong>Опис:</strong> ${task.desc}</p>
+                        <p style="font-size: 14px; margin-bottom: 10px; color: #10B981;"><strong>Критерії прийняття (AC):</strong> ${task.ac}</p>
+                        
+                        <div class="attr-grid" style="margin-top: 10px; background-color: transparent; border: 1px dashed #374151; padding: 10px;">
+                            <div class="attr-box">
+                                <h4 style="font-size: 12px; color: #00E5FF;">Критерії готовності до роботи (DoR)</h4>
+                                <ul class="bullet-list-small">
+                                    ${task.dor.map(item => `<li>${item}</li>`).join('')}
+                                </ul>
+                            </div>
+                            <div class="attr-box">
+                                <h4 style="font-size: 12px; color: #10B981;">Критерії готовності (DoD)</h4>
+                                <ul class="bullet-list-small">
+                                    ${task.dod.map(item => `<li>${item}</li>`).join('')}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+        container.appendChild(detailsObj);
+    });
+
+    document.getElementById('total-sp').innerText = totalSP;
+</script>
+
+</body>
+</html>
